@@ -1,0 +1,288 @@
+.main-page {
+  min-height: 100vh;
+  padding-top: 68px;
+}
+
+/* Hero */
+.main-page__hero {
+  position: relative;
+  padding: 80px 24px 60px;
+  text-align: center;
+  overflow: hidden;
+}
+
+.main-page__hero-glow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 600px;
+  height: 400px;
+  background: radial-gradient(ellipse, rgba(124,106,255,0.12) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.main-page__hero-content {
+  position: relative;
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+.main-page__eyebrow {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 20px;
+  padding: 6px 14px;
+  background: rgba(124,106,255,0.1);
+  border-radius: 20px;
+  border: 1px solid rgba(124,106,255,0.2);
+}
+
+.main-page__headline {
+  font-family: 'Syne', sans-serif;
+  font-size: clamp(40px, 6vw, 72px);
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -2px;
+  color: var(--text);
+  margin-bottom: 16px;
+}
+
+.main-page__headline-accent {
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.main-page__subheadline {
+  font-size: 16px;
+  color: var(--text-muted);
+}
+
+/* Controls */
+.main-page__controls {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 24px 32px;
+}
+
+.main-page__controls-inner {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+/* Search Bar */
+.search-bar {
+  flex: 1;
+  min-width: 240px;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-bar__icon {
+  position: absolute;
+  left: 14px;
+  font-size: 18px;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.search-bar__input {
+  width: 100%;
+  padding: 11px 40px 11px 42px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.search-bar__input::placeholder { color: var(--text-dim); }
+
+.search-bar__input:focus {
+  border-color: rgba(124,106,255,0.4);
+  background: var(--surface2);
+  box-shadow: 0 0 0 3px rgba(124,106,255,0.1);
+}
+
+.search-bar__clear {
+  position: absolute;
+  right: 12px;
+  background: none;
+  color: var(--text-muted);
+  font-size: 12px;
+  padding: 4px;
+  border-radius: 4px;
+  transition: color 0.2s;
+}
+.search-bar__clear:hover { color: var(--text); }
+
+/* Filter Select */
+.filter-select {
+  padding: 11px 36px 11px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%237a7a95' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+}
+
+.filter-select:focus {
+  border-color: rgba(124,106,255,0.4);
+  box-shadow: 0 0 0 3px rgba(124,106,255,0.1);
+  outline: none;
+}
+
+.filter-select option {
+  background: var(--surface2);
+  color: var(--text);
+}
+
+/* Clear btn */
+.clear-btn {
+  padding: 10px 18px;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.clear-btn:hover {
+  border-color: var(--accent2);
+  color: var(--accent2);
+}
+
+/* Results bar */
+.main-page__results-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.main-page__count {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.main-page__active-filter {
+  font-size: 12px;
+  padding: 3px 10px;
+  background: rgba(124,106,255,0.1);
+  border: 1px solid rgba(124,106,255,0.2);
+  border-radius: 20px;
+  color: var(--accent);
+}
+
+.main-page__active-filter strong { font-weight: 700; }
+
+/* Grid */
+.main-page__grid-section {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 24px 80px;
+}
+
+.main-page__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+  animation: fadeInUp 0.4s ease;
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Empty state */
+.main-page__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 24px;
+  gap: 12px;
+  text-align: center;
+}
+
+.main-page__empty-icon {
+  font-size: 48px;
+  color: var(--text-dim);
+  animation: pulse 2s ease infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+.main-page__empty h3 {
+  font-family: 'Syne', sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.main-page__empty p {
+  font-size: 14px;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .main-page__hero { padding: 60px 20px 40px; }
+
+  .main-page__controls { padding: 0 16px 24px; }
+  .main-page__grid-section { padding: 0 16px 60px; }
+
+  .search-bar { min-width: 100%; }
+
+  .main-page__grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .filter-select { flex: 1; min-width: 140px; }
+}
+
+/* Skeleton loading */
+.main-page__loading {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 20px;
+  padding: 0 24px 60px;
+  max-width: 1280px;
+  margin: 0 auto;
+}
+.game-card-skeleton {
+  height: 260px;
+  border-radius: 16px;
+  background: linear-gradient(90deg, var(--surface) 25%, var(--surface2) 50%, var(--surface) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}

@@ -1,0 +1,10 @@
+/* App-level overrides and shared utilities */
+
+.page-transition {
+  animation: fadeInUp 0.35s ease;
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}

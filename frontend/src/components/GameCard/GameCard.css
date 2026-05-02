@@ -215,3 +215,28 @@
   border-color: #ff6a9b;
   background: rgba(255,106,155,0.1);
 }
+
+/* Save to My Games button */
+.game-card__save-btn {
+  width: 100%;
+  margin-top: 12px;
+  padding: 9px 16px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  border: 1px solid var(--accent);
+  background: transparent;
+  color: var(--accent);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.game-card__save-btn:hover:not(:disabled) {
+  background: rgba(124,106,255,0.15);
+  transform: translateY(-1px);
+}
+.game-card__save-btn--saved {
+  background: rgba(124,106,255,0.2);
+  color: #a08cff;
+  border-color: #a08cff;
+}
+.game-card__save-btn:disabled { opacity: 0.6; cursor: not-allowed; }

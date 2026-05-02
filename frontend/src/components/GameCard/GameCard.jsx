@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import API from '../../api';
@@ -13,7 +13,7 @@ const statusColors = {
 const StarRating = ({ rating }) => {
   const stars = Math.round(rating / 2);
   return (
-    <div className="stars" aria-label={`Rating: ${rating}/10`}>
+    <div className="stars">
       {[1,2,3,4,5].map(i => (
         <span key={i} className={`star ${i <= stars ? 'star--filled' : ''}`}>★</span>
       ))}
@@ -22,22 +22,38 @@ const StarRating = ({ rating }) => {
   );
 };
 
-const GameCard = ({ game, onDelete, showActions }) => {
+const GameCard = ({ game, onDelete, showActions, onSaveToggle }) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const status = statusColors[game.status] || statusColors.Available;
 
-  // Safe ownership check — compare as strings to avoid ObjectId mismatch
   const creatorId = game.createdBy?._id || game.createdBy;
   const isOwner = user && creatorId && String(creatorId) === String(user._id);
+  const isSaved = user && game.savedBy?.some(id => String(id) === String(user._id));
+  const [saved, setSaved] = useState(isSaved);
+  const [saving, setSaving] = useState(false);
 
   const handleDelete = async () => {
-    if (!window.confirm(`Delete "${game.title}"? This cannot be undone.`)) return;
+    if (!window.confirm(`Delete "${game.title}"?`)) return;
     try {
       await API.delete(`/games/${game._id}`);
       if (onDelete) onDelete(game._id);
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to delete game.');
+      alert(err.response?.data?.message || 'Failed to delete.');
+    }
+  };
+
+  const handleSave = async () => {
+    if (!user) return navigate('/login');
+    setSaving(true);
+    try {
+      const res = await API.post(`/games/${game._id}/save`);
+      setSaved(res.data.isSaved);
+      if (onSaveToggle) onSaveToggle(game._id, res.data.isSaved);
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to save.');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -79,7 +95,18 @@ const GameCard = ({ game, onDelete, showActions }) => {
         <span className="game-card__price">${game.price}</span>
       </div>
 
-      {/* Edit/Delete: only shown to the owner */}
+      {/* Save to My Games button — show to logged-in non-owners */}
+      {user && !isOwner && (
+        <button
+          className={`game-card__save-btn ${saved ? 'game-card__save-btn--saved' : ''}`}
+          onClick={handleSave}
+          disabled={saving}
+        >
+          {saved ? '✓ Saved to My Games' : '+ Save to My Games'}
+        </button>
+      )}
+
+      {/* Edit/Delete — owner only */}
       {showActions && isOwner && (
         <div className="game-card__actions">
           <button

@@ -13,6 +13,7 @@ const postLogger = require('./middleware/postLogger');
 const app = express();
 const PORT = process.env.PORT || 5000;
 const MONGO_URI = process.env.MONGO_URI;
+const isProd = process.env.NODE_ENV === 'production';
 
 if (!MONGO_URI) {
   console.error('MONGO_URI is not defined');
@@ -27,10 +28,24 @@ mongoose
     process.exit(1);
   });
 
+// CORS — must allow credentials and exact frontend origin
+const allowedOrigins = [
+  'http://localhost:5173',
+  process.env.CLIENT_URL,
+].filter(Boolean);
+
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:5173',
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
 }));
+
+app.set('trust proxy', 1); // Required for Render/Heroku
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -42,8 +57,8 @@ app.use(session({
   store: MongoStore.create({ mongoUrl: MONGO_URI, ttl: 86400 }),
   cookie: {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    secure: isProd,        // true on Render (HTTPS)
+    sameSite: isProd ? 'none' : 'lax', // 'none' required for cross-site cookies
     maxAge: 86400000,
   },
 }));
@@ -62,4 +77,5 @@ app.use((err, req, res, next) => res.status(500).json({ message: 'Internal serve
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`   Mode: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`   Allowed origins: ${allowedOrigins.join(', ')}`);
 });

@@ -22,15 +22,16 @@ const StarRating = ({ rating }) => {
   );
 };
 
-const GameCard = ({ game, onDelete, showActions, onSaveToggle }) => {
+// showSaveButton: only true on MainPage
+const GameCard = ({ game, onDelete, showActions, onSaveToggle, showSaveButton }) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const status = statusColors[game.status] || statusColors.Available;
 
   const creatorId = game.createdBy?._id || game.createdBy;
   const isOwner = user && creatorId && String(creatorId) === String(user._id);
-  const isSaved = user && game.savedBy?.some(id => String(id) === String(user._id));
-  const [saved, setSaved] = useState(isSaved);
+  const isSavedInit = user && game.savedBy?.some(id => String(id) === String(user._id));
+  const [saved, setSaved] = useState(isSavedInit);
   const [saving, setSaving] = useState(false);
 
   const handleDelete = async () => {
@@ -95,8 +96,8 @@ const GameCard = ({ game, onDelete, showActions, onSaveToggle }) => {
         <span className="game-card__price">${game.price}</span>
       </div>
 
-      {/* Save to My Games button — show to logged-in non-owners */}
-      {user && !isOwner && (
+      {/* Save button — only on MainPage and only for non-owners */}
+      {showSaveButton && user && !isOwner && (
         <button
           className={`game-card__save-btn ${saved ? 'game-card__save-btn--saved' : ''}`}
           onClick={handleSave}
@@ -106,7 +107,7 @@ const GameCard = ({ game, onDelete, showActions, onSaveToggle }) => {
         </button>
       )}
 
-      {/* Edit/Delete — owner only */}
+      {/* Edit/Delete — owner only in MyGamesPage */}
       {showActions && isOwner && (
         <div className="game-card__actions">
           <button

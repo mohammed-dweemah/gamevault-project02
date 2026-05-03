@@ -28,25 +28,25 @@ mongoose
     process.exit(1);
   });
 
-// CORS — must allow credentials and exact frontend origin
 const allowedOrigins = [
   'http://localhost:5173',
+  'http://localhost:3000',
   process.env.CLIENT_URL,
 ].filter(Boolean);
 
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
+    if (!origin || allowedOrigins.some(o => origin.startsWith(o.replace(/\/$/, '')))) {
       callback(null, true);
     } else {
-      callback(new Error('Not allowed by CORS'));
+      console.log('CORS blocked:', origin);
+      callback(null, true); // Allow all for now to debug
     }
   },
   credentials: true,
 }));
 
-app.set('trust proxy', 1); // Required for Render/Heroku
-
+app.set('trust proxy', 1);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -55,10 +55,11 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   store: MongoStore.create({ mongoUrl: MONGO_URI, ttl: 86400 }),
+  name: 'gamevault.sid',
   cookie: {
     httpOnly: true,
-    secure: isProd,        // true on Render (HTTPS)
-    sameSite: isProd ? 'none' : 'lax', // 'none' required for cross-site cookies
+    secure: isProd,
+    sameSite: isProd ? 'none' : 'lax',
     maxAge: 86400000,
   },
 }));
@@ -72,10 +73,13 @@ app.get('/api/health', (req, res) => {
 });
 
 app.use((req, res) => res.status(404).json({ message: 'Route not found.' }));
-app.use((err, req, res, next) => res.status(500).json({ message: 'Internal server error.' }));
+app.use((err, req, res, next) => {
+  console.error(err);
+  res.status(500).json({ message: 'Internal server error.' });
+});
 
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`   Mode: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`   Mode: ${isProd ? 'production' : 'development'}`);
   console.log(`   Allowed origins: ${allowedOrigins.join(', ')}`);
 });

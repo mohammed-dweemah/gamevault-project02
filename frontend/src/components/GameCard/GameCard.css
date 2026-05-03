@@ -240,3 +240,24 @@
   border-color: #a08cff;
 }
 .game-card__save-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* Remove from My Games button */
+.game-card__remove-btn {
+  width: 100%;
+  margin-top: 12px;
+  padding: 9px 16px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  border: 1px solid rgba(255,106,155,0.4);
+  background: rgba(255,106,155,0.08);
+  color: #ff6a9b;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.game-card__remove-btn:hover:not(:disabled) {
+  background: rgba(255,106,155,0.18);
+  border-color: #ff6a9b;
+  transform: translateY(-1px);
+}
+.game-card__remove-btn:disabled { opacity: 0.6; cursor: not-allowed; }

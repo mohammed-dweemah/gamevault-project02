@@ -10,7 +10,7 @@ const MyGamesPage = () => {
   const [games, setGames]     = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState('');
-  const [tab, setTab]         = useState('all'); // 'all' | 'created' | 'saved'
+  const [tab, setTab]         = useState('all');
 
   const fetchMyGames = async () => {
     setLoading(true);
@@ -27,17 +27,12 @@ const MyGamesPage = () => {
 
   useEffect(() => { fetchMyGames(); }, []);
 
-  const handleDelete = (deletedId) => {
-    setGames(prev => prev.filter(g => g._id !== deletedId));
-  };
+  // Remove deleted game
+  const handleDelete = (id) => setGames(prev => prev.filter(g => g._id !== id));
 
-  const handleSaveToggle = (gameId, isSaved) => {
-    if (!isSaved) {
-      setGames(prev => prev.filter(g => g._id !== gameId));
-    }
-  };
+  // Remove unsaved game
+  const handleRemoveSaved = (id) => setGames(prev => prev.filter(g => g._id !== id));
 
-  // Filter by tab
   const creatorId = user?._id;
   const createdGames = games.filter(g => String(g.createdBy?._id || g.createdBy) === String(creatorId));
   const savedGames   = games.filter(g => String(g.createdBy?._id || g.createdBy) !== String(creatorId));
@@ -82,9 +77,7 @@ const MyGamesPage = () => {
           <span className="my-games-page__count">
             {loading ? '' : `${displayGames.length} game${displayGames.length !== 1 ? 's' : ''}`}
           </span>
-          <Link to="/add-game" className="my-games-page__add-btn">
-            + Add New Game
-          </Link>
+          <Link to="/add-game" className="my-games-page__add-btn">+ Add New Game</Link>
         </div>
 
         {error && (
@@ -113,15 +106,20 @@ const MyGamesPage = () => {
           </div>
         ) : (
           <div className="my-games-page__grid">
-            {displayGames.map(game => (
-              <GameCard
-                key={game._id}
-                game={game}
-                onDelete={handleDelete}
-                onSaveToggle={handleSaveToggle}
-                showActions={true}
-              />
-            ))}
+            {displayGames.map(game => {
+              const isOwned = String(game.createdBy?._id || game.createdBy) === String(creatorId);
+              return (
+                <GameCard
+                  key={game._id}
+                  game={game}
+                  showSaveButton={false}
+                  showActions={isOwned}
+                  showRemove={!isOwned}
+                  onDelete={handleDelete}
+                  onRemoveSaved={handleRemoveSaved}
+                />
+              );
+            })}
           </div>
         )}
       </div>

@@ -22,18 +22,61 @@ const StarRating = ({ rating }) => {
   );
 };
 
-// showSaveButton: only true on MainPage
-const GameCard = ({ game, onDelete, showActions, onSaveToggle, showSaveButton }) => {
+const GameCard = ({
+  game,
+  onDelete,        // called when owner deletes
+  onRemoveSaved,   // called when user removes from saved (MyGamesPage)
+  showSaveButton,  // show "+ Save to My Games" (MainPage only)
+  showActions,     // show Edit/Delete (MyGamesPage owner)
+  showRemove,      // show "Remove from My Games" (MyGamesPage saved tab)
+}) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const status = statusColors[game.status] || statusColors.Available;
 
   const creatorId = game.createdBy?._id || game.createdBy;
   const isOwner = user && creatorId && String(creatorId) === String(user._id);
+
   const isSavedInit = user && game.savedBy?.some(id => String(id) === String(user._id));
   const [saved, setSaved] = useState(isSavedInit);
   const [saving, setSaving] = useState(false);
+  const [removing, setRemoving] = useState(false);
 
+  // Save to My Games (MainPage)
+  const handleSave = async () => {
+    if (!user) return navigate('/login');
+    setSaving(true);
+    try {
+      const res = await API.post(`/games/${game._id}/save`);
+      setSaved(res.data.isSaved);
+    } catch (err) {
+      const msg = err.response?.data?.message || '';
+      if (err.response?.status === 401) {
+        navigate('/login');
+      } else {
+        alert(msg || 'Failed to save.');
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Remove from My Games (MyGamesPage saved tab)
+  const handleRemoveSaved = async () => {
+    if (!window.confirm(`Remove "${game.title}" from My Games?`)) return;
+    setRemoving(true);
+    try {
+      await API.post(`/games/${game._id}/save`); // toggle = remove
+      if (onRemoveSaved) onRemoveSaved(game._id);
+    } catch (err) {
+      if (err.response?.status === 401) navigate('/login');
+      else alert('Failed to remove.');
+    } finally {
+      setRemoving(false);
+    }
+  };
+
+  // Delete game (owner)
   const handleDelete = async () => {
     if (!window.confirm(`Delete "${game.title}"?`)) return;
     try {
@@ -41,20 +84,6 @@ const GameCard = ({ game, onDelete, showActions, onSaveToggle, showSaveButton })
       if (onDelete) onDelete(game._id);
     } catch (err) {
       alert(err.response?.data?.message || 'Failed to delete.');
-    }
-  };
-
-  const handleSave = async () => {
-    if (!user) return navigate('/login');
-    setSaving(true);
-    try {
-      const res = await API.post(`/games/${game._id}/save`);
-      setSaved(res.data.isSaved);
-      if (onSaveToggle) onSaveToggle(game._id, res.data.isSaved);
-    } catch (err) {
-      alert(err.response?.data?.message || 'Failed to save.');
-    } finally {
-      setSaving(false);
     }
   };
 
@@ -96,18 +125,29 @@ const GameCard = ({ game, onDelete, showActions, onSaveToggle, showSaveButton })
         <span className="game-card__price">${game.price}</span>
       </div>
 
-      {/* Save button — only on MainPage and only for non-owners */}
+      {/* Save to My Games — MainPage only, non-owners */}
       {showSaveButton && user && !isOwner && (
         <button
           className={`game-card__save-btn ${saved ? 'game-card__save-btn--saved' : ''}`}
           onClick={handleSave}
           disabled={saving}
         >
-          {saved ? '✓ Saved to My Games' : '+ Save to My Games'}
+          {saved ? '✓ Saved' : '+ Save to My Games'}
         </button>
       )}
 
-      {/* Edit/Delete — owner only in MyGamesPage */}
+      {/* Remove from My Games — MyGamesPage saved tab */}
+      {showRemove && (
+        <button
+          className="game-card__remove-btn"
+          onClick={handleRemoveSaved}
+          disabled={removing}
+        >
+          ✕ Remove from My Games
+        </button>
+      )}
+
+      {/* Edit / Delete — owner only in MyGamesPage */}
       {showActions && isOwner && (
         <div className="game-card__actions">
           <button

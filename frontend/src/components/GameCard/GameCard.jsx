@@ -10,6 +10,12 @@ const statusColors = {
   New:       { bg: 'rgba(124,106,255,0.15)', color: '#a08cff' },
 };
 
+const COVER_COLORS = [
+  '#7c6aff','#ff6a9b','#6affda','#f4c542','#ff8c42','#42c8ff','#a8ff42','#ff42a8',
+];
+
+const getColor = (title = '') => COVER_COLORS[title.charCodeAt(0) % COVER_COLORS.length];
+
 const StarRating = ({ rating }) => {
   const stars = Math.round(rating / 2);
   return (
@@ -22,13 +28,38 @@ const StarRating = ({ rating }) => {
   );
 };
 
+// Cover image with fallback
+const GameCover = ({ cover, title }) => {
+  const [imgError, setImgError] = useState(false);
+  const abbr = title?.slice(0, 3).toUpperCase() || '???';
+  const color = getColor(title);
+
+  if (!cover || imgError) {
+    return (
+      <div className="game-card__cover-fallback" style={{ background: color }}>
+        <span>{abbr}</span>
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={cover}
+      alt={title}
+      loading="lazy"
+      className="game-card__cover-img"
+      onError={() => setImgError(true)}
+    />
+  );
+};
+
 const GameCard = ({
   game,
-  onDelete,        // called when owner deletes
-  onRemoveSaved,   // called when user removes from saved (MyGamesPage)
-  showSaveButton,  // show "+ Save to My Games" (MainPage only)
-  showActions,     // show Edit/Delete (MyGamesPage owner)
-  showRemove,      // show "Remove from My Games" (MyGamesPage saved tab)
+  onDelete,
+  onRemoveSaved,
+  showSaveButton,
+  showActions,
+  showRemove,
 }) => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -36,13 +67,11 @@ const GameCard = ({
 
   const creatorId = game.createdBy?._id || game.createdBy;
   const isOwner = user && creatorId && String(creatorId) === String(user._id);
-
   const isSavedInit = user && game.savedBy?.some(id => String(id) === String(user._id));
   const [saved, setSaved] = useState(isSavedInit);
   const [saving, setSaving] = useState(false);
   const [removing, setRemoving] = useState(false);
 
-  // Save to My Games (MainPage)
   const handleSave = async () => {
     if (!user) return navigate('/login');
     setSaving(true);
@@ -50,23 +79,18 @@ const GameCard = ({
       const res = await API.post(`/games/${game._id}/save`);
       setSaved(res.data.isSaved);
     } catch (err) {
-      const msg = err.response?.data?.message || '';
-      if (err.response?.status === 401) {
-        navigate('/login');
-      } else {
-        alert(msg || 'Failed to save.');
-      }
+      if (err.response?.status === 401) navigate('/login');
+      else alert(err.response?.data?.message || 'Failed to save.');
     } finally {
       setSaving(false);
     }
   };
 
-  // Remove from My Games (MyGamesPage saved tab)
   const handleRemoveSaved = async () => {
     if (!window.confirm(`Remove "${game.title}" from My Games?`)) return;
     setRemoving(true);
     try {
-      await API.post(`/games/${game._id}/save`); // toggle = remove
+      await API.post(`/games/${game._id}/save`);
       if (onRemoveSaved) onRemoveSaved(game._id);
     } catch (err) {
       if (err.response?.status === 401) navigate('/login');
@@ -76,7 +100,6 @@ const GameCard = ({
     }
   };
 
-  // Delete game (owner)
   const handleDelete = async () => {
     if (!window.confirm(`Delete "${game.title}"?`)) return;
     try {
@@ -92,7 +115,7 @@ const GameCard = ({
       <div className="game-card__accent" />
       <div className="game-card__header">
         <div className="game-card__cover">
-          <img src={game.cover} alt={game.title} loading="lazy" />
+          <GameCover cover={game.cover} title={game.title} />
         </div>
         <div className="game-card__meta">
           <div className="game-card__top">
@@ -125,7 +148,6 @@ const GameCard = ({
         <span className="game-card__price">${game.price}</span>
       </div>
 
-      {/* Save to My Games — MainPage only, non-owners */}
       {showSaveButton && user && !isOwner && (
         <button
           className={`game-card__save-btn ${saved ? 'game-card__save-btn--saved' : ''}`}
@@ -136,7 +158,6 @@ const GameCard = ({
         </button>
       )}
 
-      {/* Remove from My Games — MyGamesPage saved tab */}
       {showRemove && (
         <button
           className="game-card__remove-btn"
@@ -147,21 +168,16 @@ const GameCard = ({
         </button>
       )}
 
-      {/* Edit / Delete — owner only in MyGamesPage */}
       {showActions && isOwner && (
         <div className="game-card__actions">
           <button
             className="game-card__action-btn game-card__action-btn--edit"
             onClick={() => navigate(`/edit-game/${game._id}`)}
-          >
-            ✎ Edit
-          </button>
+          >✎ Edit</button>
           <button
             className="game-card__action-btn game-card__action-btn--delete"
             onClick={handleDelete}
-          >
-            ✕ Delete
-          </button>
+          >✕ Delete</button>
         </div>
       )}
     </article>

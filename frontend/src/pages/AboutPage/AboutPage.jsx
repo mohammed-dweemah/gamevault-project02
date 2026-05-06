@@ -28,7 +28,7 @@ const AboutPage = () => {
           <span className="about-eyebrow">◈ About This Project</span>
           <h1 className="about-headline">GameVault</h1>
           <p className="about-tagline">
-            A full  stack application built for the<br />
+            A full MERN stack application built for the<br />
             <strong>Web Applications Programming &amp; Engineering</strong> course.
           </p>
         </div>
@@ -78,7 +78,7 @@ const AboutPage = () => {
 
       <section className="about-section about-tech">
         <div className="about-section__inner">
-          <h2 className="about-section__title">Technologies Used</h2>
+          <h2 className="about-section__title">Tech Stack — MERN</h2>
           <div className="about-tech__grid">
             {techStack.map(tech => (
               <div key={tech.name} className="about-tech__item">

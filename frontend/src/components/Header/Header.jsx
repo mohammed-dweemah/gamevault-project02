@@ -10,6 +10,7 @@ const Header = () => {
   const [menuOpen, setMenuOpen] = useState(false);
 
   const isActive = (path) => location.pathname === path;
+  const isAdmin = user?.role === 'admin';
 
   const handleLogout = async () => {
     try {
@@ -36,20 +37,22 @@ const Header = () => {
             About
           </Link>
           {user && (
-            <>
-              <Link to="/my-games" className={`header__link ${isActive('/my-games') ? 'header__link--active' : ''}`}>
-                My Games
-              </Link>
-              <Link to="/add-game" className={`header__link header__link--add ${isActive('/add-game') ? 'header__link--active' : ''}`}>
-                + Add Game
-              </Link>
-            </>
+            <Link to="/my-games" className={`header__link ${isActive('/my-games') ? 'header__link--active' : ''}`}>
+              My Games
+            </Link>
+          )}
+          {/* Add Game — Admin only */}
+          {isAdmin && (
+            <Link to="/add-game" className={`header__link header__link--add ${isActive('/add-game') ? 'header__link--active' : ''}`}>
+              + Add Game
+            </Link>
           )}
         </div>
 
         <div className="header__auth">
           {user ? (
             <div className="header__user">
+              {isAdmin && <span className="header__admin-badge">Admin</span>}
               <span className="header__user-name">👤 {user.name}</span>
               <button className="header__logout-btn" onClick={handleLogout}>
                 Logout
@@ -67,23 +70,19 @@ const Header = () => {
           )}
         </div>
 
-        {/* Mobile hamburger */}
-        <button className="header__hamburger" onClick={() => setMenuOpen(!menuOpen)} aria-label="Toggle menu">
+        <button className="header__hamburger" onClick={() => setMenuOpen(!menuOpen)}>
           <span /><span /><span />
         </button>
       </nav>
 
-      {/* Mobile menu */}
       {menuOpen && (
         <div className="header__mobile-menu">
           <Link to="/" onClick={() => setMenuOpen(false)}>Library</Link>
           <Link to="/about" onClick={() => setMenuOpen(false)}>About</Link>
+          {user && <Link to="/my-games" onClick={() => setMenuOpen(false)}>My Games</Link>}
+          {isAdmin && <Link to="/add-game" onClick={() => setMenuOpen(false)}>+ Add Game</Link>}
           {user ? (
-            <>
-              <Link to="/my-games" onClick={() => setMenuOpen(false)}>My Games</Link>
-              <Link to="/add-game" onClick={() => setMenuOpen(false)}>+ Add Game</Link>
-              <button onClick={() => { handleLogout(); setMenuOpen(false); }}>Logout</button>
-            </>
+            <button onClick={() => { handleLogout(); setMenuOpen(false); }}>Logout</button>
           ) : (
             <>
               <Link to="/login" onClick={() => setMenuOpen(false)}>Sign In</Link>

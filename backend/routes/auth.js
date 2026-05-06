@@ -8,7 +8,6 @@ router.post('/register', async (req, res) => {
   try {
     const { name, email, password, confirm } = req.body;
 
-    // Basic validation
     if (!name || !email || !password || !confirm) {
       return res.status(400).json({ message: 'All fields are required.' });
     }
@@ -19,29 +18,27 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ message: 'Password must be at least 6 characters.' });
     }
 
-    // Check if email already exists
     const existing = await User.findOne({ email: email.toLowerCase() });
     if (existing) {
       return res.status(409).json({ message: 'An account with this email already exists.' });
     }
 
-    // Create user (password is hashed by pre-save hook in model)
-    const user = await User.create({ name, email, password });
+    // New users are always 'user' role — never admin via registration
+    const user = await User.create({ name, email, password, role: 'user' });
 
-    // Start session
-    req.session.userId = user._id.toString();
+    req.session.userId   = user._id.toString();
     req.session.userName = user.name;
+    req.session.userRole = user.role;
 
     res.status(201).json({
       message: 'Account created successfully.',
-      user: { _id: user._id, name: user.name, email: user.email },
+      user: { _id: user._id, name: user.name, email: user.email, role: user.role },
     });
   } catch (err) {
     if (err.code === 11000) {
       return res.status(409).json({ message: 'Email already in use.' });
     }
-    console.error('Register error:', err);
-    res.status(500).json({ message: 'Server error. Please try again.' });
+    res.status(500).json({ message: 'Server error.' });
   }
 });
 
@@ -54,44 +51,39 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ message: 'Email and password are required.' });
     }
 
-    // Find user
     const user = await User.findOne({ email: email.toLowerCase() });
     if (!user) {
       return res.status(401).json({ message: 'Invalid email or password.' });
     }
 
-    // Compare password
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
       return res.status(401).json({ message: 'Invalid email or password.' });
     }
 
-    // Save session
-    req.session.userId = user._id.toString();
+    req.session.userId   = user._id.toString();
     req.session.userName = user.name;
+    req.session.userRole = user.role;
 
     res.status(200).json({
       message: 'Logged in successfully.',
-      user: { _id: user._id, name: user.name, email: user.email },
+      user: { _id: user._id, name: user.name, email: user.email, role: user.role },
     });
   } catch (err) {
-    console.error('Login error:', err);
-    res.status(500).json({ message: 'Server error. Please try again.' });
+    res.status(500).json({ message: 'Server error.' });
   }
 });
 
 // POST /api/auth/logout
 router.post('/logout', (req, res) => {
   req.session.destroy((err) => {
-    if (err) {
-      return res.status(500).json({ message: 'Could not log out. Please try again.' });
-    }
-    res.clearCookie('connect.sid');
+    if (err) return res.status(500).json({ message: 'Could not log out.' });
+    res.clearCookie('gamevault.sid');
     res.status(200).json({ message: 'Logged out successfully.' });
   });
 });
 
-// GET /api/auth/me — check current session
+// GET /api/auth/me
 router.get('/me', requireAuth, async (req, res) => {
   try {
     const user = await User.findById(req.session.userId).select('-password');
@@ -101,7 +93,6 @@ router.get('/me', requireAuth, async (req, res) => {
     }
     res.status(200).json({ user });
   } catch (err) {
-    console.error('Me error:', err);
     res.status(500).json({ message: 'Server error.' });
   }
 });

@@ -12,6 +12,8 @@ const MyGamesPage = () => {
   const [error, setError]     = useState('');
   const [tab, setTab]         = useState('all');
 
+  const isAdmin = user?.role === 'admin';
+
   const fetchMyGames = async () => {
     setLoading(true);
     setError('');
@@ -27,13 +29,10 @@ const MyGamesPage = () => {
 
   useEffect(() => { fetchMyGames(); }, []);
 
-  // Remove deleted game
-  const handleDelete = (id) => setGames(prev => prev.filter(g => g._id !== id));
-
-  // Remove unsaved game
+  const handleDelete    = (id) => setGames(prev => prev.filter(g => g._id !== id));
   const handleRemoveSaved = (id) => setGames(prev => prev.filter(g => g._id !== id));
 
-  const creatorId = user?._id;
+  const creatorId    = user?._id;
   const createdGames = games.filter(g => String(g.createdBy?._id || g.createdBy) === String(creatorId));
   const savedGames   = games.filter(g => String(g.createdBy?._id || g.createdBy) !== String(creatorId));
   const displayGames = tab === 'created' ? createdGames : tab === 'saved' ? savedGames : games;
@@ -48,27 +47,19 @@ const MyGamesPage = () => {
           <h1 className="my-games-page__title">Your Game Library</h1>
           <p className="my-games-page__subtitle">
             Games added or saved by <strong>{user?.name}</strong>
+            {isAdmin && <span className="my-games-page__admin-tag"> — Admin</span>}
           </p>
         </div>
 
         {/* Tabs */}
         <div className="my-games-page__tabs">
-          <button
-            className={`my-games-page__tab ${tab === 'all' ? 'my-games-page__tab--active' : ''}`}
-            onClick={() => setTab('all')}
-          >
+          <button className={`my-games-page__tab ${tab === 'all' ? 'my-games-page__tab--active' : ''}`} onClick={() => setTab('all')}>
             All ({games.length})
           </button>
-          <button
-            className={`my-games-page__tab ${tab === 'created' ? 'my-games-page__tab--active' : ''}`}
-            onClick={() => setTab('created')}
-          >
-            Created ({createdGames.length})
+          <button className={`my-games-page__tab ${tab === 'created' ? 'my-games-page__tab--active' : ''}`} onClick={() => setTab('created')}>
+            {isAdmin ? 'Added by Me' : 'My Games'} ({createdGames.length})
           </button>
-          <button
-            className={`my-games-page__tab ${tab === 'saved' ? 'my-games-page__tab--active' : ''}`}
-            onClick={() => setTab('saved')}
-          >
+          <button className={`my-games-page__tab ${tab === 'saved' ? 'my-games-page__tab--active' : ''}`} onClick={() => setTab('saved')}>
             Saved ({savedGames.length})
           </button>
         </div>
@@ -77,13 +68,14 @@ const MyGamesPage = () => {
           <span className="my-games-page__count">
             {loading ? '' : `${displayGames.length} game${displayGames.length !== 1 ? 's' : ''}`}
           </span>
-          <Link to="/add-game" className="my-games-page__add-btn">+ Add New Game</Link>
+          {isAdmin && (
+            <Link to="/add-game" className="my-games-page__add-btn">+ Add New Game</Link>
+          )}
         </div>
 
         {error && (
           <div className="my-games-page__error">
-            {error}
-            <button onClick={fetchMyGames}>Retry</button>
+            {error} <button onClick={fetchMyGames}>Retry</button>
           </div>
         )}
 
@@ -98,23 +90,20 @@ const MyGamesPage = () => {
             <p>
               {tab === 'saved'
                 ? 'Browse the library and click "+ Save to My Games"'
-                : "You haven't added any games yet."}
+                : isAdmin ? 'Add your first game from the library.' : 'Save games from the library.'}
             </p>
-            {tab !== 'saved' && (
-              <Link to="/add-game" className="my-games-page__add-btn">+ Add Your First Game</Link>
-            )}
           </div>
         ) : (
           <div className="my-games-page__grid">
             {displayGames.map(game => {
-              const isOwned = String(game.createdBy?._id || game.createdBy) === String(creatorId);
+              const isCreator = String(game.createdBy?._id || game.createdBy) === String(creatorId);
               return (
                 <GameCard
                   key={game._id}
                   game={game}
                   showSaveButton={false}
-                  showActions={isOwned}
-                  showRemove={!isOwned}
+                  showActions={isAdmin && isCreator}   // Edit/Delete: Admin + creator
+                  showRemove={!isCreator}              // Remove: saved games only
                   onDelete={handleDelete}
                   onRemoveSaved={handleRemoveSaved}
                 />

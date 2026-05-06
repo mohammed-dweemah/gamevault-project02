@@ -2,8 +2,9 @@ const express = require('express');
 const router = express.Router();
 const Game = require('../models/Game');
 const requireAuth = require('../middleware/requireAuth');
+const requireAdmin = require('../middleware/requireAdmin');
 
-// GET /api/games — fetch all games
+// GET /api/games — public
 router.get('/', async (req, res) => {
   try {
     const { search, genre, sortBy, myGames } = req.query;
@@ -38,18 +39,17 @@ router.get('/', async (req, res) => {
       default:            sort = { rating: -1 };
     }
 
-    const games = await Game.find(query).sort(sort).populate('createdBy', 'name email');
+    const games = await Game.find(query).sort(sort).populate('createdBy', 'name email role');
     res.status(200).json({ games, total: games.length });
   } catch (err) {
-    console.error('Get games error:', err);
     res.status(500).json({ message: 'Server error.' });
   }
 });
 
-// GET /api/games/:id
+// GET /api/games/:id — public
 router.get('/:id', async (req, res) => {
   try {
-    const game = await Game.findById(req.params.id).populate('createdBy', 'name email');
+    const game = await Game.findById(req.params.id).populate('createdBy', 'name email role');
     if (!game) return res.status(404).json({ message: 'Game not found.' });
     res.status(200).json({ game });
   } catch (err) {
@@ -57,8 +57,8 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// POST /api/games — create game
-router.post('/', requireAuth, async (req, res) => {
+// POST /api/games — ADMIN ONLY
+router.post('/', requireAdmin, async (req, res) => {
   try {
     const { title, genre, platform, developer, year, rating, price, status, cover, description, tags } = req.body;
     if (!title || !genre || !platform || !developer || !year || rating == null || price == null || !description) {
@@ -73,29 +73,25 @@ router.post('/', requireAuth, async (req, res) => {
       tags: Array.isArray(tags) ? tags : (tags ? tags.split(',').map(t => t.trim()).filter(Boolean) : []),
       createdBy: req.session.userId,
     });
-    await game.populate('createdBy', 'name email');
+    await game.populate('createdBy', 'name email role');
     res.status(201).json({ message: 'Game added successfully.', game });
   } catch (err) {
-    console.error('Create game error:', err);
     res.status(500).json({ message: 'Server error.' });
   }
 });
 
-// POST /api/games/:id/save — toggle save to My Games
+// POST /api/games/:id/save — toggle save (auth required)
 router.post('/:id/save', requireAuth, async (req, res) => {
   try {
     const game = await Game.findById(req.params.id);
     if (!game) return res.status(404).json({ message: 'Game not found.' });
 
     const userId = req.session.userId;
-
-    // Can't save your own game (already in My Games as creator)
     if (game.createdBy.toString() === userId) {
       return res.status(400).json({ message: 'This is already your game.' });
     }
 
     const isSaved = game.savedBy.some(id => id.toString() === userId);
-
     if (isSaved) {
       game.savedBy = game.savedBy.filter(id => id.toString() !== userId);
     } else {
@@ -108,44 +104,39 @@ router.post('/:id/save', requireAuth, async (req, res) => {
       isSaved: !isSaved,
     });
   } catch (err) {
-    console.error('Save error:', err);
     res.status(500).json({ message: 'Server error.' });
   }
 });
 
-// PUT /api/games/:id — update (owner only)
-router.put('/:id', requireAuth, async (req, res) => {
+// PUT /api/games/:id — ADMIN ONLY
+router.put('/:id', requireAdmin, async (req, res) => {
   try {
     const { title, genre, platform, developer, year, rating, price, status, cover, description, tags } = req.body;
-    const game = await Game.findOneAndUpdate(
-      { _id: req.params.id, createdBy: req.session.userId },
-      { title, genre, platform, developer,
+    const game = await Game.findByIdAndUpdate(
+      req.params.id,
+      {
+        title, genre, platform, developer,
         year: Number(year), rating: Number(rating), price: Number(price),
         status, cover, description,
         tags: Array.isArray(tags) ? tags : (tags ? tags.split(',').map(t => t.trim()).filter(Boolean) : []),
       },
       { new: true, runValidators: true }
-    ).populate('createdBy', 'name email');
+    ).populate('createdBy', 'name email role');
 
-    if (!game) return res.status(403).json({ message: 'Not found or unauthorized.' });
+    if (!game) return res.status(404).json({ message: 'Game not found.' });
     res.status(200).json({ message: 'Game updated successfully.', game });
   } catch (err) {
-    console.error('Update error:', err);
     res.status(500).json({ message: 'Server error.' });
   }
 });
 
-// DELETE /api/games/:id — delete (owner only)
-router.delete('/:id', requireAuth, async (req, res) => {
+// DELETE /api/games/:id — ADMIN ONLY
+router.delete('/:id', requireAdmin, async (req, res) => {
   try {
-    const game = await Game.findOneAndDelete({
-      _id: req.params.id,
-      createdBy: req.session.userId,
-    });
-    if (!game) return res.status(403).json({ message: 'Not found or unauthorized.' });
+    const game = await Game.findByIdAndDelete(req.params.id);
+    if (!game) return res.status(404).json({ message: 'Game not found.' });
     res.status(200).json({ message: 'Game deleted successfully.' });
   } catch (err) {
-    console.error('Delete error:', err);
     res.status(500).json({ message: 'Server error.' });
   }
 });

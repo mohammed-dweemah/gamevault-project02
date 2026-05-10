@@ -144,6 +144,7 @@ const MyGamesPage = () => {
                   key={game._id}
                   game={game}
                   showSaveButton={false}
+                  isOnMyGamesPage={true}
                   showActions={isAdmin && isCreator}
                   showRemove={!isCreator && !isPurchased}  // saved (not purchased)
                   onDelete={handleDelete}

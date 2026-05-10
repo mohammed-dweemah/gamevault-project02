@@ -51,6 +51,7 @@ const GameCover = ({ cover, title }) => {
 const GameCard = ({
   game,
   onDelete,
+  isOnMyGamesPage,
   onRemoveSaved,
   showSaveButton,
   showActions,
@@ -165,7 +166,7 @@ const GameCard = ({
           onClick={handleBuy}
         >
           {purchased
-            ? '✓ Owned — View in My Games'
+            ? (isOnMyGamesPage ? `✓ Owned` : `✓ Owned — View in My Games`)
             : `🛒 Buy Now — $${game.price}`}
         </button>
       )}

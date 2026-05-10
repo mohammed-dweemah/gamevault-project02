@@ -18,13 +18,13 @@ const EyeIcon = ({ open }) =>
   );
 
 const RegisterPage = () => {
-  const [form, setForm]       = useState({ name: '', email: '', password: '', confirm: '' });
-  const [error, setError]     = useState('');
-  const [loading, setLoading] = useState(false);
-  const [showPass, setShowPass]       = useState(false);
+  const [form, setForm]           = useState({ name: '', email: '', password: '', confirm: '' });
+  const [error, setError]         = useState('');
+  const [loading, setLoading]     = useState(false);
+  const [showPass, setShowPass]   = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-  const { register } = useAuth();
-  const navigate     = useNavigate();
+  const { register, refreshSession } = useAuth();
+  const navigate = useNavigate();
 
   const handleChange = e => {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
@@ -39,9 +39,12 @@ const RegisterPage = () => {
       return setError('Passwords do not match.');
     if (form.password.length < 6)
       return setError('Password must be at least 6 characters.');
+
     setLoading(true);
     try {
       await register(form.name, form.email, form.password, form.confirm);
+      // إعادة التحقق من الـ session بعد التسجيل (مهم للهاتف)
+      await refreshSession();
       navigate('/');
     } catch (err) {
       setError(err.response?.data?.message || 'Registration failed. Please try again.');
@@ -65,7 +68,6 @@ const RegisterPage = () => {
         {error && <div className="auth-error">{error}</div>}
 
         <form className="auth-form" onSubmit={handleSubmit}>
-          {/* Full Name */}
           <div className="auth-form__group">
             <label htmlFor="name" className="auth-form__label">Full Name</label>
             <input
@@ -76,7 +78,6 @@ const RegisterPage = () => {
             />
           </div>
 
-          {/* Email */}
           <div className="auth-form__group">
             <label htmlFor="email" className="auth-form__label">Email Address</label>
             <input
@@ -87,7 +88,6 @@ const RegisterPage = () => {
             />
           </div>
 
-          {/* Password */}
           <div className="auth-form__group">
             <label htmlFor="password" className="auth-form__label">Password</label>
             <div className="auth-form__input-wrapper">
@@ -99,19 +99,14 @@ const RegisterPage = () => {
                 className="auth-form__input auth-form__input--icon"
                 autoComplete="new-password"
               />
-              <button
-                type="button"
-                className="auth-form__eye-btn"
-                onClick={() => setShowPass(p => !p)}
-                tabIndex={-1}
-                aria-label={showPass ? 'Hide password' : 'Show password'}
-              >
+              <button type="button" className="auth-form__eye-btn"
+                onClick={() => setShowPass(p => !p)} tabIndex={-1}
+                aria-label={showPass ? 'Hide password' : 'Show password'}>
                 <EyeIcon open={showPass} />
               </button>
             </div>
           </div>
 
-          {/* Confirm Password */}
           <div className="auth-form__group">
             <label htmlFor="confirm" className="auth-form__label">Confirm Password</label>
             <div className="auth-form__input-wrapper">
@@ -123,13 +118,9 @@ const RegisterPage = () => {
                 className="auth-form__input auth-form__input--icon"
                 autoComplete="new-password"
               />
-              <button
-                type="button"
-                className="auth-form__eye-btn"
-                onClick={() => setShowConfirm(p => !p)}
-                tabIndex={-1}
-                aria-label={showConfirm ? 'Hide password' : 'Show password'}
-              >
+              <button type="button" className="auth-form__eye-btn"
+                onClick={() => setShowConfirm(p => !p)} tabIndex={-1}
+                aria-label={showConfirm ? 'Hide password' : 'Show password'}>
                 <EyeIcon open={showConfirm} />
               </button>
             </div>

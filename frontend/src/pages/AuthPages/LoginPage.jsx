@@ -22,8 +22,8 @@ const LoginPage = () => {
   const [error, setError]       = useState('');
   const [loading, setLoading]   = useState(false);
   const [showPass, setShowPass] = useState(false);
-  const { login }  = useAuth();
-  const navigate   = useNavigate();
+  const { login, refreshSession } = useAuth();
+  const navigate = useNavigate();
 
   const handleChange = e => {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
@@ -36,6 +36,8 @@ const LoginPage = () => {
     setLoading(true);
     try {
       await login(form.email, form.password);
+      // إعادة التحقق من الـ session بعد الدخول (مهم للهاتف)
+      await refreshSession();
       navigate('/');
     } catch (err) {
       setError(err.response?.data?.message || 'Login failed. Please try again.');
@@ -81,13 +83,9 @@ const LoginPage = () => {
                 className="auth-form__input auth-form__input--icon"
                 autoComplete="current-password"
               />
-              <button
-                type="button"
-                className="auth-form__eye-btn"
-                onClick={() => setShowPass(p => !p)}
-                tabIndex={-1}
-                aria-label={showPass ? 'Hide password' : 'Show password'}
-              >
+              <button type="button" className="auth-form__eye-btn"
+                onClick={() => setShowPass(p => !p)} tabIndex={-1}
+                aria-label={showPass ? 'Hide password' : 'Show password'}>
                 <EyeIcon open={showPass} />
               </button>
             </div>

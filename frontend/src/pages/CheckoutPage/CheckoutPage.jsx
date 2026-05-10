@@ -5,29 +5,37 @@ import { useAuth } from '../../context/AuthContext';
 import './CheckoutPage.css';
 
 const CheckoutPage = () => {
-  const { id } = useParams();
-  const { user } = useNavigate ? useNavigate : {};
-  const navigate = useNavigate();
-  const { user: currentUser } = useAuth();
+  const { id }             = useParams();
+  const navigate           = useNavigate();
+  const { user }           = useAuth();
 
   const [game, setGame]       = useState(null);
   const [loading, setLoading] = useState(true);
   const [step, setStep]       = useState(1); // 1: details, 2: payment, 3: success
   const [form, setForm]       = useState({
-    fullName: currentUser?.name || '',
-    email: currentUser?.email || '',
+    fullName:   user?.name  || '',
+    email:      user?.email || '',
     cardNumber: '',
-    expiry: '',
-    cvv: '',
+    expiry:     '',
+    cvv:        '',
   });
   const [processing, setProcessing] = useState(false);
-  const [errors, setErrors]   = useState({});
+  const [errors, setErrors]         = useState({});
+  const [purchaseError, setPurchaseError] = useState('');
 
   useEffect(() => {
     const fetchGame = async () => {
       try {
         const res = await API.get(`/games/${id}`);
-        setGame(res.data.game);
+        const g   = res.data.game;
+
+        // Check if already owned — redirect to My Games
+        const alreadyOwned = g.purchasedBy?.some(uid => String(uid) === String(user?._id));
+        if (alreadyOwned) {
+          navigate('/my-games');
+          return;
+        }
+        setGame(g);
       } catch {
         navigate('/');
       } finally {
@@ -40,19 +48,14 @@ const CheckoutPage = () => {
   const handleChange = (e) => {
     let { name, value } = e.target;
 
-    // Format card number
     if (name === 'cardNumber') {
       value = value.replace(/\D/g, '').slice(0, 16);
       value = value.replace(/(.{4})/g, '$1 ').trim();
     }
-
-    // Format expiry
     if (name === 'expiry') {
       value = value.replace(/\D/g, '').slice(0, 4);
       if (value.length >= 2) value = value.slice(0, 2) + '/' + value.slice(2);
     }
-
-    // Format CVV
     if (name === 'cvv') {
       value = value.replace(/\D/g, '').slice(0, 3);
     }
@@ -64,7 +67,7 @@ const CheckoutPage = () => {
   const validateStep1 = () => {
     const errs = {};
     if (!form.fullName.trim()) errs.fullName = 'Name is required';
-    if (!form.email.trim()) errs.email = 'Email is required';
+    if (!form.email.trim())    errs.email    = 'Email is required';
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -72,9 +75,9 @@ const CheckoutPage = () => {
   const validateStep2 = () => {
     const errs = {};
     const rawCard = form.cardNumber.replace(/\s/g, '');
-    if (rawCard.length !== 16) errs.cardNumber = 'Enter a valid 16-digit card number';
+    if (rawCard.length !== 16)          errs.cardNumber = 'Enter a valid 16-digit card number';
     if (!form.expiry || form.expiry.length < 5) errs.expiry = 'Enter a valid expiry date';
-    if (!form.cvv || form.cvv.length < 3) errs.cvv = 'Enter a valid CVV';
+    if (!form.cvv || form.cvv.length < 3)       errs.cvv    = 'Enter a valid CVV';
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -86,10 +89,20 @@ const CheckoutPage = () => {
   const handlePurchase = async () => {
     if (!validateStep2()) return;
     setProcessing(true);
-    // Simulate payment processing
+    setPurchaseError('');
+
+    // Simulate payment processing delay
     await new Promise(r => setTimeout(r, 2000));
-    setProcessing(false);
-    setStep(3);
+
+    try {
+      // Call backend to record the purchase
+      await API.post(`/games/${id}/purchase`);
+      setStep(3);
+    } catch (err) {
+      setPurchaseError(err.response?.data?.message || 'Purchase failed. Please try again.');
+    } finally {
+      setProcessing(false);
+    }
   };
 
   if (loading) return (
@@ -106,13 +119,14 @@ const CheckoutPage = () => {
 
       <div className="checkout-page__container">
 
-        {/* Step 3 — Success */}
+        {/* ── Step 3 — Success ───────────────────────── */}
         {step === 3 ? (
           <div className="checkout-success">
             <div className="checkout-success__icon">✓</div>
             <h1 className="checkout-success__title">Purchase Complete!</h1>
             <p className="checkout-success__subtitle">
-              Thank you <strong>{form.fullName}</strong>! Your copy of <strong>{game.title}</strong> is ready.
+              Thank you <strong>{form.fullName}</strong>!{' '}
+              <strong>{game.title}</strong> is now in your library.
             </p>
             <p className="checkout-success__email">
               A confirmation has been sent to <strong>{form.email}</strong>
@@ -130,6 +144,7 @@ const CheckoutPage = () => {
               </button>
             </div>
           </div>
+
         ) : (
           <>
             {/* Header */}
@@ -192,6 +207,10 @@ const CheckoutPage = () => {
                 {step === 2 && (
                   <div className="checkout-form">
                     <h2 className="checkout-form__title">Payment Details</h2>
+
+                    {purchaseError && (
+                      <div className="checkout-form__purchase-error">{purchaseError}</div>
+                    )}
 
                     <div className="checkout-form__group">
                       <label className="checkout-form__label">Card Number</label>

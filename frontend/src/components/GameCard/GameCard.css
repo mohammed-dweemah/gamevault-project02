@@ -301,3 +301,28 @@
   box-shadow: 0 6px 24px rgba(124,106,255,0.45);
 }
 .game-card__buy-btn:active { transform: translateY(0); }
+
+/* ── Owned / Purchased button state ──────────────── */
+.game-card__buy-btn--owned {
+  background: rgba(106, 255, 218, 0.1) !important;
+  color: #6affda !important;
+  border: 1px solid rgba(106, 255, 218, 0.3) !important;
+  cursor: pointer;
+}
+
+.game-card__buy-btn--owned:hover {
+  background: rgba(106, 255, 218, 0.18) !important;
+  transform: translateY(-1px);
+}
+
+/* ── Purchase error in checkout ───────────────────── */
+.checkout-form__purchase-error {
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  background: rgba(255, 106, 155, 0.1);
+  border: 1px solid rgba(255, 106, 155, 0.3);
+  color: #ff6a9b;
+  font-size: 14px;
+  font-weight: 500;
+}

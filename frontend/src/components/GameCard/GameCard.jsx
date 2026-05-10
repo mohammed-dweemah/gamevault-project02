@@ -5,8 +5,8 @@ import API from '../../api';
 import './GameCard.css';
 
 const statusColors = {
-  Available: { bg: 'rgba(106,255,218,0.1)', color: '#6affda' },
-  Sale:      { bg: 'rgba(255,106,155,0.1)', color: '#ff6a9b' },
+  Available: { bg: 'rgba(106,255,218,0.1)',  color: '#6affda' },
+  Sale:      { bg: 'rgba(255,106,155,0.1)',  color: '#ff6a9b' },
   New:       { bg: 'rgba(124,106,255,0.15)', color: '#a08cff' },
 };
 
@@ -29,7 +29,7 @@ const StarRating = ({ rating }) => {
 
 const GameCover = ({ cover, title }) => {
   const [imgError, setImgError] = useState(false);
-  const abbr = title?.slice(0, 3).toUpperCase() || '???';
+  const abbr  = title?.slice(0, 3).toUpperCase() || '???';
   const color = getColor(title);
 
   if (!cover || imgError) {
@@ -56,13 +56,17 @@ const GameCard = ({
   showActions,
   showRemove,
 }) => {
-  const { user } = useAuth();
-  const navigate = useNavigate();
-  const status = statusColors[game.status] || statusColors.Available;
+  const { user }   = useAuth();
+  const navigate   = useNavigate();
+  const status     = statusColors[game.status] || statusColors.Available;
 
-  const isAdmin = user?.role === 'admin';
-  const creatorId = game.createdBy?._id || game.createdBy;
-  const isOwner = user && creatorId && String(creatorId) === String(user._id);
+  const isAdmin    = user?.role === 'admin';
+  const creatorId  = game.createdBy?._id || game.createdBy;
+  const isOwner    = user && creatorId && String(creatorId) === String(user._id);
+
+  // Check if already purchased
+  const isPurchasedInit = user && game.purchasedBy?.some(id => String(id) === String(user._id));
+  const [purchased, setPurchased] = useState(isPurchasedInit);
 
   const isSavedInit = user && game.savedBy?.some(id => String(id) === String(user._id));
   const [saved, setSaved]     = useState(isSavedInit);
@@ -109,6 +113,8 @@ const GameCard = ({
 
   const handleBuy = () => {
     if (!user) return navigate('/login');
+    // If already purchased → go to My Games
+    if (purchased) return navigate('/my-games');
     navigate(`/checkout/${game._id}`);
   };
 
@@ -147,18 +153,25 @@ const GameCard = ({
           <span className="game-card__genre">{game.genre}</span>
           <StarRating rating={game.rating} />
         </div>
-        <span className="game-card__price">${game.price}</span>
+        <span className="game-card__price">
+          {game.price === 0 ? 'Free' : `$${game.price}`}
+        </span>
       </div>
 
-      {/* Buy button — non-admin users only */}
+      {/* Buy / Owned button — non-admin users only */}
       {!isAdmin && (
-        <button className="game-card__buy-btn" onClick={handleBuy}>
-          🛒 Buy Now — ${game.price}
+        <button
+          className={`game-card__buy-btn ${purchased ? 'game-card__buy-btn--owned' : ''}`}
+          onClick={handleBuy}
+        >
+          {purchased
+            ? '✓ Owned — View in My Games'
+            : `🛒 Buy Now — $${game.price}`}
         </button>
       )}
 
-      {/* Save to My Games — MainPage only, non-admin, non-owner */}
-      {showSaveButton && user && !isAdmin && (
+      {/* Save to My Games — MainPage only, non-admin, non-owner, not yet purchased */}
+      {showSaveButton && user && !isAdmin && !purchased && (
         <button
           className={`game-card__save-btn ${saved ? 'game-card__save-btn--saved' : ''}`}
           onClick={handleSave}

@@ -6,8 +6,8 @@ import GameCard from '../../components/GameCard/GameCard';
 import './MyGamesPage.css';
 
 const MyGamesPage = () => {
-  const { user } = useAuth();
-  const [games, setGames]     = useState([]);
+  const { user }          = useAuth();
+  const [games, setGames] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState('');
   const [tab, setTab]         = useState('all');
@@ -29,13 +29,24 @@ const MyGamesPage = () => {
 
   useEffect(() => { fetchMyGames(); }, []);
 
-  const handleDelete    = (id) => setGames(prev => prev.filter(g => g._id !== id));
+  const handleDelete      = (id) => setGames(prev => prev.filter(g => g._id !== id));
   const handleRemoveSaved = (id) => setGames(prev => prev.filter(g => g._id !== id));
 
-  const creatorId    = user?._id;
-  const createdGames = games.filter(g => String(g.createdBy?._id || g.createdBy) === String(creatorId));
-  const savedGames   = games.filter(g => String(g.createdBy?._id || g.createdBy) !== String(creatorId));
-  const displayGames = tab === 'created' ? createdGames : tab === 'saved' ? savedGames : games;
+  const userId       = user?._id;
+  const createdGames = games.filter(g => String(g.createdBy?._id || g.createdBy) === String(userId));
+  const savedGames   = games.filter(g =>
+    String(g.createdBy?._id || g.createdBy) !== String(userId) &&
+    !g.purchasedBy?.some(id => String(id) === String(userId))
+  );
+  const purchasedGames = games.filter(g =>
+    g.purchasedBy?.some(id => String(id) === String(userId))
+  );
+
+  const displayGames =
+    tab === 'created'   ? createdGames   :
+    tab === 'saved'     ? savedGames     :
+    tab === 'purchased' ? purchasedGames :
+    games;
 
   return (
     <main className="my-games-page">
@@ -46,20 +57,42 @@ const MyGamesPage = () => {
           <span className="my-games-page__eyebrow">◈ My Collection</span>
           <h1 className="my-games-page__title">Your Game Library</h1>
           <p className="my-games-page__subtitle">
-            Games added or saved by <strong>{user?.name}</strong>
+            Games added, saved or purchased by <strong>{user?.name}</strong>
             {isAdmin && <span className="my-games-page__admin-tag"> — Admin</span>}
           </p>
         </div>
 
         {/* Tabs */}
         <div className="my-games-page__tabs">
-          <button className={`my-games-page__tab ${tab === 'all' ? 'my-games-page__tab--active' : ''}`} onClick={() => setTab('all')}>
+          <button
+            className={`my-games-page__tab ${tab === 'all' ? 'my-games-page__tab--active' : ''}`}
+            onClick={() => setTab('all')}
+          >
             All ({games.length})
           </button>
-          <button className={`my-games-page__tab ${tab === 'created' ? 'my-games-page__tab--active' : ''}`} onClick={() => setTab('created')}>
-            {isAdmin ? 'Added by Me' : 'My Games'} ({createdGames.length})
-          </button>
-          <button className={`my-games-page__tab ${tab === 'saved' ? 'my-games-page__tab--active' : ''}`} onClick={() => setTab('saved')}>
+
+          {isAdmin && (
+            <button
+              className={`my-games-page__tab ${tab === 'created' ? 'my-games-page__tab--active' : ''}`}
+              onClick={() => setTab('created')}
+            >
+              Added by Me ({createdGames.length})
+            </button>
+          )}
+
+          {!isAdmin && (
+            <button
+              className={`my-games-page__tab ${tab === 'purchased' ? 'my-games-page__tab--active' : ''}`}
+              onClick={() => setTab('purchased')}
+            >
+              🛒 Purchased ({purchasedGames.length})
+            </button>
+          )}
+
+          <button
+            className={`my-games-page__tab ${tab === 'saved' ? 'my-games-page__tab--active' : ''}`}
+            onClick={() => setTab('saved')}
+          >
             Saved ({savedGames.length})
           </button>
         </div>
@@ -86,24 +119,33 @@ const MyGamesPage = () => {
         ) : displayGames.length === 0 ? (
           <div className="my-games-page__empty">
             <span className="my-games-page__empty-icon">◎</span>
-            <h3>{tab === 'saved' ? 'No saved games yet' : 'No games yet'}</h3>
+            <h3>
+              {tab === 'saved'     ? 'No saved games yet'     :
+               tab === 'purchased' ? 'No purchased games yet' :
+               'No games yet'}
+            </h3>
             <p>
               {tab === 'saved'
                 ? 'Browse the library and click "+ Save to My Games"'
-                : isAdmin ? 'Add your first game from the library.' : 'Save games from the library.'}
+                : tab === 'purchased'
+                ? 'Browse the library and buy a game to see it here.'
+                : isAdmin
+                ? 'Add your first game from the library.'
+                : 'Save or purchase games from the library.'}
             </p>
           </div>
         ) : (
           <div className="my-games-page__grid">
             {displayGames.map(game => {
-              const isCreator = String(game.createdBy?._id || game.createdBy) === String(creatorId);
+              const isCreator   = String(game.createdBy?._id || game.createdBy) === String(userId);
+              const isPurchased = game.purchasedBy?.some(id => String(id) === String(userId));
               return (
                 <GameCard
                   key={game._id}
                   game={game}
                   showSaveButton={false}
-                  showActions={isAdmin && isCreator}   // Edit/Delete: Admin + creator
-                  showRemove={!isCreator}              // Remove: saved games only
+                  showActions={isAdmin && isCreator}
+                  showRemove={!isCreator && !isPurchased}  // saved (not purchased)
                   onDelete={handleDelete}
                   onRemoveSaved={handleRemoveSaved}
                 />

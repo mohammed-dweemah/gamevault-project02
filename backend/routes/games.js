@@ -1,7 +1,7 @@
-const express = require('express');
-const router = express.Router();
-const Game = require('../models/Game');
-const requireAuth = require('../middleware/requireAuth');
+const express      = require('express');
+const router       = express.Router();
+const Game         = require('../models/Game');
+const requireAuth  = require('../middleware/requireAuth');
 const requireAdmin = require('../middleware/requireAdmin');
 
 // GET /api/games — public
@@ -12,8 +12,9 @@ router.get('/', async (req, res) => {
 
     if (myGames === 'true' && req.session?.userId) {
       query.$or = [
-        { createdBy: req.session.userId },
-        { savedBy: req.session.userId },
+        { createdBy:   req.session.userId },
+        { savedBy:     req.session.userId },
+        { purchasedBy: req.session.userId },
       ];
     }
 
@@ -21,9 +22,9 @@ router.get('/', async (req, res) => {
 
     if (search) {
       query.$or = [
-        { title: { $regex: search, $options: 'i' } },
+        { title:     { $regex: search, $options: 'i' } },
         { developer: { $regex: search, $options: 'i' } },
-        { tags: { $regex: search, $options: 'i' } },
+        { tags:      { $regex: search, $options: 'i' } },
       ];
     }
 
@@ -80,7 +81,7 @@ router.post('/', requireAdmin, async (req, res) => {
   }
 });
 
-// POST /api/games/:id/save — toggle save (auth required)
+// POST /api/games/:id/save — toggle save (auth required, users only)
 router.post('/:id/save', requireAuth, async (req, res) => {
   try {
     const game = await Game.findById(req.params.id);
@@ -102,6 +103,42 @@ router.post('/:id/save', requireAuth, async (req, res) => {
     res.status(200).json({
       message: isSaved ? 'Removed from My Games.' : 'Added to My Games.',
       isSaved: !isSaved,
+    });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error.' });
+  }
+});
+
+// POST /api/games/:id/purchase — purchase game (auth required, users only)
+router.post('/:id/purchase', requireAuth, async (req, res) => {
+  try {
+    const game = await Game.findById(req.params.id);
+    if (!game) return res.status(404).json({ message: 'Game not found.' });
+
+    const userId = req.session.userId;
+
+    // Admin cannot purchase games
+    if (req.session.userRole === 'admin') {
+      return res.status(403).json({ message: 'Admins cannot purchase games.' });
+    }
+
+    // Prevent purchasing own (admin-created) game
+    if (game.createdBy.toString() === userId) {
+      return res.status(400).json({ message: 'You cannot purchase your own game.' });
+    }
+
+    // Prevent purchasing the same game twice
+    const alreadyOwned = game.purchasedBy.some(id => id.toString() === userId);
+    if (alreadyOwned) {
+      return res.status(400).json({ message: 'You already own this game.' });
+    }
+
+    game.purchasedBy.push(userId);
+    await game.save();
+
+    res.status(200).json({
+      message: 'Purchase successful! Game added to My Games.',
+      owned: true,
     });
   } catch (err) {
     res.status(500).json({ message: 'Server error.' });

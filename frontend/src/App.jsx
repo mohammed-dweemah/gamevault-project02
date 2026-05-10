@@ -8,13 +8,21 @@ import RegisterPage from './pages/AuthPages/RegisterPage';
 import AboutPage from './pages/AboutPage/AboutPage';
 import AddGamePage from './pages/AddGamePage/AddGamePage';
 import MyGamesPage from './pages/MyGamesPage/MyGamesPage';
+import CheckoutPage from './pages/CheckoutPage/CheckoutPage';
 import './App.css';
 
-// Protected route wrapper
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
   if (loading) return <div className="loading-screen"><span className="loading-spinner" /></div>;
   if (!user) return <Navigate to="/login" replace />;
+  return children;
+};
+
+const AdminRoute = ({ children }) => {
+  const { user, loading } = useAuth();
+  if (loading) return <div className="loading-screen"><span className="loading-spinner" /></div>;
+  if (!user) return <Navigate to="/login" replace />;
+  if (user.role !== 'admin') return <Navigate to="/" replace />;
   return children;
 };
 
@@ -27,14 +35,15 @@ const AppRoutes = () => {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/about" element={<AboutPage />} />
-        <Route path="/add-game" element={
-          <ProtectedRoute><AddGamePage /></ProtectedRoute>
-        } />
+        <Route path="/checkout/:id" element={<CheckoutPage />} />
         <Route path="/my-games" element={
           <ProtectedRoute><MyGamesPage /></ProtectedRoute>
         } />
+        <Route path="/add-game" element={
+          <AdminRoute><AddGamePage /></AdminRoute>
+        } />
         <Route path="/edit-game/:id" element={
-          <ProtectedRoute><AddGamePage /></ProtectedRoute>
+          <AdminRoute><AddGamePage /></AdminRoute>
         } />
         <Route path="*" element={
           <div style={{

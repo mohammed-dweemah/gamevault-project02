@@ -280,3 +280,24 @@
   transform: translateY(-1px);
 }
 .game-card__remove-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* Buy button */
+.game-card__buy-btn {
+  width: 100%;
+  margin-top: 14px;
+  padding: 11px 16px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 700;
+  border: none;
+  background: linear-gradient(135deg, var(--accent) 0%, #9580ff 100%);
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: 0.3px;
+}
+.game-card__buy-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 24px rgba(124,106,255,0.45);
+}
+.game-card__buy-btn:active { transform: translateY(0); }

@@ -13,7 +13,6 @@ const statusColors = {
 const COVER_COLORS = [
   '#7c6aff','#ff6a9b','#6affda','#f4c542','#ff8c42','#42c8ff','#a8ff42','#ff42a8',
 ];
-
 const getColor = (title = '') => COVER_COLORS[title.charCodeAt(0) % COVER_COLORS.length];
 
 const StarRating = ({ rating }) => {
@@ -28,7 +27,6 @@ const StarRating = ({ rating }) => {
   );
 };
 
-// Cover image with fallback
 const GameCover = ({ cover, title }) => {
   const [imgError, setImgError] = useState(false);
   const abbr = title?.slice(0, 3).toUpperCase() || '???';
@@ -41,12 +39,9 @@ const GameCover = ({ cover, title }) => {
       </div>
     );
   }
-
   return (
     <img
-      src={cover}
-      alt={title}
-      loading="lazy"
+      src={cover} alt={title} loading="lazy"
       className="game-card__cover-img"
       onError={() => setImgError(true)}
     />
@@ -65,11 +60,13 @@ const GameCard = ({
   const navigate = useNavigate();
   const status = statusColors[game.status] || statusColors.Available;
 
+  const isAdmin = user?.role === 'admin';
   const creatorId = game.createdBy?._id || game.createdBy;
   const isOwner = user && creatorId && String(creatorId) === String(user._id);
+
   const isSavedInit = user && game.savedBy?.some(id => String(id) === String(user._id));
-  const [saved, setSaved] = useState(isSavedInit);
-  const [saving, setSaving] = useState(false);
+  const [saved, setSaved]     = useState(isSavedInit);
+  const [saving, setSaving]   = useState(false);
   const [removing, setRemoving] = useState(false);
 
   const handleSave = async () => {
@@ -110,6 +107,11 @@ const GameCard = ({
     }
   };
 
+  const handleBuy = () => {
+    if (!user) return navigate('/login');
+    navigate(`/checkout/${game._id}`);
+  };
+
   return (
     <article className="game-card">
       <div className="game-card__accent" />
@@ -148,7 +150,15 @@ const GameCard = ({
         <span className="game-card__price">${game.price}</span>
       </div>
 
-      {showSaveButton && user && !isOwner && (
+      {/* Buy button — non-admin users only */}
+      {!isAdmin && (
+        <button className="game-card__buy-btn" onClick={handleBuy}>
+          🛒 Buy Now — ${game.price}
+        </button>
+      )}
+
+      {/* Save to My Games — MainPage only, non-admin, non-owner */}
+      {showSaveButton && user && !isAdmin && (
         <button
           className={`game-card__save-btn ${saved ? 'game-card__save-btn--saved' : ''}`}
           onClick={handleSave}
@@ -158,6 +168,7 @@ const GameCard = ({
         </button>
       )}
 
+      {/* Remove from My Games — saved games only */}
       {showRemove && (
         <button
           className="game-card__remove-btn"
@@ -168,7 +179,8 @@ const GameCard = ({
         </button>
       )}
 
-      {showActions && isOwner && (
+      {/* Edit / Delete — admin owner only */}
+      {showActions && isAdmin && isOwner && (
         <div className="game-card__actions">
           <button
             className="game-card__action-btn game-card__action-btn--edit"
